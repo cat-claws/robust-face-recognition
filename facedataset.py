@@ -79,8 +79,8 @@ class MXFaceDatasetConventional(MXFaceDataset):
 
 
 class MXFaceDatasetBalancedIntraInterClusters(MXFaceDataset):
-	def __init__(self, source):
-		super(MXFaceDatasetBalancedIntraInterClusters, self).__init__(source)
+	def __init__(self, source, resize = (112, 112)):
+		super(MXFaceDatasetBalancedIntraInterClusters, self).__init__(source, resize)
 		# random.shuffle(self.persons)
 		persons_list = list(self.persons.values())
 		self.upper = list(chain(*persons_list[::2]))
@@ -111,7 +111,7 @@ def collate_paired_data(batch):
 import pickle as pkl
 
 class MXFaceDatasetFromBin(torch.utils.data.Dataset):
-	def __init__(self, source, dset):
+	def __init__(self, source, dset, resize = (112, 112)):
 		with open(os.path.join(source, dset + '.bin'), 'rb') as f:
 			bins, self.issame_list = pkl.load(f, encoding='bytes')
 
@@ -120,6 +120,7 @@ class MXFaceDatasetFromBin(torch.utils.data.Dataset):
 		for a, b in zip(bins[0::2], bins[1::2]):
 			self.A.append(torch.from_numpy(mx.image.imdecode(a).asnumpy().transpose(2, 0, 1)))
 			self.B.append(torch.from_numpy(mx.image.imdecode(b).asnumpy().transpose(2, 0, 1)))
+		self.resize = resize
 
 	def __len__(self):
 		return len(self.A)
@@ -127,6 +128,9 @@ class MXFaceDatasetFromBin(torch.utils.data.Dataset):
 	def __getitem__(self, index):
 		a = self.A[index]
 		b = self.B[index]
+		if self.resize != (112, 112):
+			a = T.Resize(resize)(a)
+			b = T.Resize(resize)(b)
 		return {'id':index,
 				'A':a / 255,
 				'B':b / 255,
