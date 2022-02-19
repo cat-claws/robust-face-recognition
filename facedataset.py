@@ -39,12 +39,12 @@ transforms = torch.nn.Sequential(
     T.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 )
 
-def idx_to_data(record, idx, resize = (112, 112)):
+def idx_to_data(record, idx, resize = None):
 	s = record.read_idx(idx)
 	header, img = mx.recordio.unpack_img(s, iscolor = 1)
 	sample = img.transpose(2, 0, 1)
 	sample = transforms(torch.from_numpy(sample).flip(0))    # flip to change BGR to RGB
-	if resize != (112, 112):
+	if resize != None:
 		sample = T.Resize(resize)(sample)
 	return sample, torch.tensor(header.label, dtype=torch.long)
 
@@ -53,7 +53,7 @@ import random
 from itertools import chain
 
 class MXFaceDataset(torch.utils.data.Dataset):
-	def __init__(self, source, resize = (112, 112)):
+	def __init__(self, source, resize = None):
 		super(MXFaceDataset, self).__init__()
 		self.record = mx.recordio.MXIndexedRecordIO(os.path.join(source, 'train.idx'),
 													os.path.join(source, 'train.rec'),
@@ -64,7 +64,7 @@ class MXFaceDataset(torch.utils.data.Dataset):
 
 
 class MXFaceDatasetConventional(MXFaceDataset):
-	def __init__(self, source, resize = (112, 112)):
+	def __init__(self, source, resize = None):
 		super(MXFaceDatasetConventional, self).__init__(source, resize)
 		self.sample_idx = list(chain(*self.persons.values()))
 
@@ -79,7 +79,7 @@ class MXFaceDatasetConventional(MXFaceDataset):
 
 
 class MXFaceDatasetBalancedIntraInterClusters(MXFaceDataset):
-	def __init__(self, source, resize = (112, 112)):
+	def __init__(self, source, resize = None):
 		super(MXFaceDatasetBalancedIntraInterClusters, self).__init__(source, resize)
 		# random.shuffle(self.persons)
 		persons_list = list(self.persons.values())
@@ -111,7 +111,7 @@ def collate_paired_data(batch):
 import pickle as pkl
 
 class MXFaceDatasetFromBin(torch.utils.data.Dataset):
-	def __init__(self, source, dset, resize = (112, 112)):
+	def __init__(self, source, dset, resize = None):
 		with open(os.path.join(source, dset + '.bin'), 'rb') as f:
 			bins, self.issame_list = pkl.load(f, encoding='bytes')
 
@@ -128,7 +128,7 @@ class MXFaceDatasetFromBin(torch.utils.data.Dataset):
 	def __getitem__(self, index):
 		a = self.A[index]
 		b = self.B[index]
-		if self.resize != (112, 112):
+		if self.resize != None:
 			a = T.Resize(self.resize)(a)
 			b = T.Resize(self.resize)(b)
 		return {'id':index,
