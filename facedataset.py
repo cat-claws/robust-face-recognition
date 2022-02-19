@@ -129,8 +129,8 @@ class MXFaceDatasetFromBin(torch.utils.data.Dataset):
 		a = self.A[index]
 		b = self.B[index]
 		if self.resize != (112, 112):
-			a = T.Resize(resize)(a)
-			b = T.Resize(resize)(b)
+			a = T.Resize(self.resize)(a)
+			b = T.Resize(self.resize)(b)
 		return {'id':index,
 				'A':a / 255,
 				'B':b / 255,
