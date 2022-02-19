@@ -39,11 +39,13 @@ transforms = torch.nn.Sequential(
     T.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 )
 
-def idx_to_data(record, idx):
+def idx_to_data(record, idx, resize = (112, 112)):
 	s = record.read_idx(idx)
 	header, img = mx.recordio.unpack_img(s, iscolor = 1)
 	sample = img.transpose(2, 0, 1)
 	sample = transforms(torch.from_numpy(sample).flip(0))    # flip to change BGR to RGB
+	if resize != (112, 112):
+		sample = T.Resize(resize)(sample)
 	return sample, torch.tensor(header.label, dtype=torch.long)
 
 
@@ -51,25 +53,26 @@ import random
 from itertools import chain
 
 class MXFaceDataset(torch.utils.data.Dataset):
-	def __init__(self, source):
+	def __init__(self, source, resize = (112, 112)):
 		super(MXFaceDataset, self).__init__()
 		self.record = mx.recordio.MXIndexedRecordIO(os.path.join(source, 'train.idx'),
 													os.path.join(source, 'train.rec'),
 													'r')
 
 		self.persons = get_person_id_category(self.record)
+		self.idx_to_data = lambda record, idx: idx_to_data(record, idx, resize)
 
 
 class MXFaceDatasetConventional(MXFaceDataset):
-	def __init__(self, source):
-		super(MXFaceDatasetConventional, self).__init__(source)
+	def __init__(self, source, resize = (112, 112)):
+		super(MXFaceDatasetConventional, self).__init__(source, resize)
 		self.sample_idx = list(chain(*self.persons.values()))
 
 	def __len__(self):
 		return len(self.sample_idx)
 
 	def __getitem__(self, index):
-		sample, label = idx_to_data(self.record, self.sample_idx[index])
+		sample, label = self.idx_to_data(self.record, self.sample_idx[index])
 		return {'images':sample,
 				'person_ids':label
 		}
@@ -93,7 +96,7 @@ class MXFaceDatasetBalancedIntraInterClusters(MXFaceDataset):
 		else:
 			pair = (random.choice(self.upper), random.choice(self.lower))
 
-		sample, label = zip(*[idx_to_data(self.record, idx) for idx in pair])
+		sample, label = zip(*[self.idx_to_data(self.record, idx) for idx in pair])
 
 		sample = torch.stack(sample)
 		label = torch.stack(label)        
