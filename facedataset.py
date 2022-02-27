@@ -160,7 +160,7 @@ class MXFaceDatasetFromBin(torch.utils.data.Dataset):
 			a = T.Resize(self.resize)(a)
 			b = T.Resize(self.resize)(b)
 		return {'id':index,
-				'A':a / 255,
-				'B':b / 255,
+				'A':(a / 255 - 0.5) * 2,
+				'B':(b / 255 - 0.5) * 2,
 				'same':self.issame_list[index]
 				}
