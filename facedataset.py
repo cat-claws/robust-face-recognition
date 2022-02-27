@@ -23,13 +23,15 @@ def get_person_id_category(record):
 		pass
 
 	category = {}
+	keys = set(record.keys)
 	for k in keys_of_samples:
-		s = record.read_idx(k)
-		header, _ = mx.recordio.unpack(s)
-		if header.label in category:
-			category[header.label].append(k)
-		else:
-			category[header.label] = [k]
+		if k in keys:
+			s = record.read_idx(k)
+			header, _ = mx.recordio.unpack(s)
+			if header.label in category:
+				category[header.label].append(k)
+			else:
+				category[header.label] = [k]
 
 	return category
 
@@ -108,6 +110,32 @@ def collate_paired_data(batch):
 	batch = {k:torch.cat([b[k] for b in batch], dim = 0) for k in batch[0]}
 	return batch
 
+class MXFaceDatasetPair(MXFaceDataset):
+	def __init__(self, source, resize = None):
+		super(MXFaceDatasetPair, self).__init__(source, resize)
+		# random.shuffle(self.persons)
+		persons_list = list(self.persons.values())
+		self.upper = list(chain(*persons_list[::2]))
+		self.lower = list(chain(*persons_list[1::2]))
+
+	def __len__(self):
+		return int(1e6)
+
+	def __getitem__(self, index):
+		same = random.random() > 0.5
+		if same:
+			pair = random.sample(random.choice(self.persons), 2)
+		else:
+			pair = (random.choice(self.upper), random.choice(self.lower))
+
+		sample, label = zip(*[self.idx_to_data(self.record, idx) for idx in pair])
+
+		sample = torch.cat(sample, dim = 0)
+		label = label[0] == label[1]
+		return {'images':sample,
+				'same':label
+		}
+	
 import pickle as pkl
 
 class MXFaceDatasetFromBin(torch.utils.data.Dataset):
