@@ -110,9 +110,9 @@ def collate_paired_data(batch):
 	batch = {k:torch.cat([b[k] for b in batch], dim = 0) for k in batch[0]}
 	return batch
 
-class MXFaceDatasetPair(MXFaceDataset):
+class MXFaceDatasetTwin(MXFaceDataset):
 	def __init__(self, source, resize = None):
-		super(MXFaceDatasetPair, self).__init__(source, resize)
+		super(MXFaceDatasetTwin, self).__init__(source, resize)
 		# random.shuffle(self.persons)
 		persons_list = list(self.persons.values())
 		self.upper = list(chain(*persons_list[::2]))
