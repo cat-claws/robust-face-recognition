@@ -53,6 +53,7 @@ class TwinResNet(LightningModule):
         new_layer.weight = nn.Parameter(new_layer.weight)
 
         model.conv1 = new_layer
+        model.fc = nn.Linear(in_features=512, out_features=2, bias=True)
         self.resnet_model = model
         
     def forward(self, images):
