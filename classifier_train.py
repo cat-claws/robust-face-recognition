@@ -10,7 +10,7 @@ import torchvision.models as models
 import torchvision.transforms as T
 import numpy as np
 
-from facedataset import MXFaceDatasetTwin, MXFaceDatasetFromBin
+
 from tqdm import tqdm
 
 from pytorch_lightning import Trainer
@@ -84,6 +84,9 @@ class TwinResNet(LightningModule):
 
 
 def main():
+    from facedataset import MXFaceDatasetTwin, MXFaceDatasetFromBin
+    
+    
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # train_set_ = MXFaceDatasetConventional(source)
