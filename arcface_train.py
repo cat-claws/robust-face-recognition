@@ -23,9 +23,6 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 import argparse
 
-# Load the pretrained ResNet model.
-resnet_model = models.resnet18(pretrained = True)
-
 # Throw away the layer that does classification on this model (the last layer).
 # Then discard the height and width dimensions using tensor.view.
 class FeatureExtractor(nn.Module):
@@ -81,14 +78,16 @@ class ArcMarginProduct(nn.Module):
 
 
 class ArcFace(LightningModule):
-	def __init__(self, out_features = 13938, embeddings = 512):
+	def __init__(self, out_features = 13938, embeddings = 512, structure = 'resnet18'):
 		super(ArcFace, self).__init__()
-		if embeddings == 512:
+		resnet_model = torch.hub.load('pytorch/vision:v0.10.0', structure, pretrained=True)
+		
+		if embeddings == resnet_model.fc.in_features:
 			self.backbone = FeatureExtractor(resnet_model)
-			self.header = ArcMarginProduct(in_features=512, out_features=out_features, s=30, m=0.5)
+			self.header = ArcMarginProduct(in_features=embeddings, out_features=out_features, s=30, m=0.5)
 		else:
 			self.backbone = resnet_model
-			self.backbone.fc = nn.Linear(in_features=512, out_features=embeddings)
+			self.backbone.fc = nn.Linear(in_features=resnet_model.fc.in_features, out_features=embeddings)
 			self.header = ArcMarginProduct(in_features=embeddings, out_features=out_features, s=30, m=0.5)
 
 	def forward(self, images, labels):
@@ -144,16 +143,16 @@ def main():
 	valid_set_ = MXFaceDatasetFromBin(source, 'lfw')
 	valid_set = torch.utils.data.DataLoader(valid_set_, batch_size = 1200, shuffle = False)
 
-	model = ArcFace(out_features = num_persons)
+	model = ArcFace(out_features = num_persons, embeddings = opt.embedding_dim, structure = opt.structure)
 	# model.load_state_dict(torch.load(os.path.join(source, 'arcface.pt')))
 
 	trainer = Trainer(accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-					  gpus=[opt.device_id],
-					  max_epochs=opt.max_epochs,
-					  gradient_clip_val=5,
-					  callbacks=[ModelCheckpoint(monitor="val_acc")],
-					  resume_from_checkpoint = opt.ckpt if len(opt.ckpt) > 5 else None
-					 )
+			  gpus=[opt.device_id],
+			  max_epochs=opt.max_epochs,
+			  gradient_clip_val=5,
+			  callbacks=[ModelCheckpoint(monitor="val_acc")],
+			  resume_from_checkpoint = opt.ckpt if len(opt.ckpt) > 5 else None
+			 )
 	trainer.fit(model, train_set, valid_set)
 	trainer.test(model, valid_set, ckpt_path = 'best')
 
@@ -197,6 +196,5 @@ if __name__ == "__main__":
 
 	num_persons = opt.num_persons
 	source = opt.source
-	embedding_dim = opt.embedding_dim
-
+	
 	main()
