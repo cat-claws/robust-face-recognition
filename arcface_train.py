@@ -184,19 +184,19 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="face models")
-    parser.add_argument("--max_epochs", type=int, default=100, help="max epochs in training")
+	parser = argparse.ArgumentParser(description="face models")
+	parser.add_argument("--max_epochs", type=int, default=100, help="max epochs in training")
 	parser.add_argument("--structure", type=str, default="resnet18", help='resnet models')
 	parser.add_argument("--ckpt", type=str, default="resnet18", help='pytorch lightning checkp')
-    parser.add_argument("--source", type=str, default="faces_webface_112x112", help='path of files to process')
-    parser.add_argument("--num_persons", type=int, default=13938, help="number of persons in training set")
-    parser.add_argument("--embedding_dim", type=int, default=512, help="embedding dimension")
-    parser.add_argument("--device_id", type=int, default=1, help="GPU id")
+	parser.add_argument("--source", type=str, default="faces_webface_112x112", help='path of files to process')
+	parser.add_argument("--num_persons", type=int, default=13938, help="number of persons in training set")
+	parser.add_argument("--embedding_dim", type=int, default=512, help="embedding dimension")
+	parser.add_argument("--device_id", type=int, default=1, help="GPU id")
 
-    opt = parser.parse_args()
+	opt = parser.parse_args()
 
-    num_persons = opt.num_persons
-    source = opt.source
+	num_persons = opt.num_persons
+	source = opt.source
 	embedding_dim = opt.embedding_dim
 
-    main()
+	main()
