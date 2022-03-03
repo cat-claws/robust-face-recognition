@@ -84,11 +84,10 @@ class ArcFace(LightningModule):
 		
 		if embeddings == resnet_model.fc.in_features:
 			self.backbone = FeatureExtractor(resnet_model)
-			self.header = ArcMarginProduct(in_features=embeddings, out_features=out_features, s=30, m=0.5)
 		else:
 			self.backbone = resnet_model
 			self.backbone.fc = nn.Linear(in_features=resnet_model.fc.in_features, out_features=embeddings)
-			self.header = ArcMarginProduct(in_features=embeddings, out_features=out_features, s=30, m=0.5)
+		self.header = ArcMarginProduct(in_features=embeddings, out_features=out_features, s=30, m=0.5)
 
 	def forward(self, images, labels):
 		features = self.backbone(images)
