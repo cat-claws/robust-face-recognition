@@ -130,8 +130,6 @@ class ArcFace(LightningModule):
 def main():
 	from facedataset import MXFaceDatasetConventional, MXFaceDatasetBalancedIntraInterClusters, collate_paired_data, MXFaceDatasetFromBin
 
-	resnet_model = torch.hub.load('pytorch/vision:v0.10.0', opt.structure, pretrained=True)
-
 	device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 	# train_set_ = MXFaceDatasetConventional(source)
