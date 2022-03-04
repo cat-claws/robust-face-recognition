@@ -120,7 +120,7 @@ if __name__ == "__main__":
 	parser.add_argument("--device_id", type=int, default=1, help="GPU id")
 	parser.add_argument("--max_epochs", type=int, default=100, help="max epochs in training")
 	parser.add_argument("--structure", type=str, default="resnet18", help='resnet models')
-	parser.add_argument("--ckpt", type=str, default="resnet18", help='pytorch lightning checkp')
+	parser.add_argument("--ckpt", type=str, default="", help='pytorch lightning checkp')
 
 	opt = parser.parse_args()
 
