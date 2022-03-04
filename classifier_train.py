@@ -95,7 +95,7 @@ def main():
 	train_set = torch.utils.data.DataLoader(train_set_, batch_size = 256, shuffle = True, num_workers = 2)#, collate_fn=collate_paired_data)
 
 	valid_set_ = MXFaceDatasetFromBin(source, 'lfw')
-	valid_set = torch.utils.data.DataLoader(valid_set_, batch_size = 256, shuffle = False)
+	valid_set = torch.utils.data.DataLoader(valid_set_, batch_size = 256, shuffle = False, num_workers = 2)
 
 	model = TwinResNet(opt.structure)
 	# model.load_state_dict(torch.load(os.path.join(source, 'classifier.pt')))
