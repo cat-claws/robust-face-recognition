@@ -3,6 +3,7 @@ from sklearn.svm import LinearSVC
 from sklearn.metrics import confusion_matrix, accuracy_score
 
 import os
+import sys
 import math
 
 import torch
@@ -80,13 +81,16 @@ class ArcMarginProduct(nn.Module):
 class ArcFace(LightningModule):
 	def __init__(self, out_features = 13938, embeddings = 512, structure = 'resnet18'):
 		super(ArcFace, self).__init__()
-		resnet_model = torch.hub.load('pytorch/vision:v0.10.0', structure, pretrained=True)
-		
-		if embeddings == resnet_model.fc.in_features:
-			self.backbone = FeatureExtractor(resnet_model)
+		if structure.startswith('resnet'):
+			resnet_model = torch.hub.load('pytorch/vision:v0.10.0', structure, pretrained=True)
+
+			if embeddings == resnet_model.fc.in_features:
+				self.backbone = FeatureExtractor(resnet_model)
+			else:
+				self.backbone = resnet_model
+				self.backbone.fc = nn.Linear(in_features=resnet_model.fc.in_features, out_features=embeddings)
 		else:
-			self.backbone = resnet_model
-			self.backbone.fc = nn.Linear(in_features=resnet_model.fc.in_features, out_features=embeddings)
+			self.backbone = get_model(structure)
 		self.header = ArcMarginProduct(in_features=embeddings, out_features=out_features, s=30, m=0.5)
 
 	def forward(self, images, labels):
@@ -127,6 +131,11 @@ class ArcFace(LightningModule):
 		# return torch.optim.Adam(self.parameters(), lr=1e-4)
 
 def main():
+	sys.path.append('insightface/recognition/arcface_torch')
+	
+	if not opt.structure.startswith('resnet'):
+		from backbones import get_model
+		
 	from facedataset import MXFaceDatasetConventional, MXFaceDatasetBalancedIntraInterClusters, collate_paired_data, MXFaceDatasetFromBin
 
 	device = 'cuda' if torch.cuda.is_available() else 'cpu'
