@@ -138,7 +138,7 @@ def main():
 	train_set = torch.utils.data.DataLoader(train_set_, batch_size = 512, shuffle = True, num_workers = 2)#, collate_fn=collate_paired_data)
 
 	valid_set_ = MXFaceDatasetFromBin(source, 'lfw')
-	valid_set = torch.utils.data.DataLoader(valid_set_, batch_size = 1200, shuffle = False)
+	valid_set = torch.utils.data.DataLoader(valid_set_, batch_size = 1200, shuffle = False, num_workers = 2)
 
 	model = ArcFace(out_features = num_persons, embeddings = opt.embedding_dim, structure = opt.structure)
 	# model.load_state_dict(torch.load(os.path.join(source, 'arcface.pt')))
