@@ -183,7 +183,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="face models")
 	parser.add_argument("--max_epochs", type=int, default=100, help="max epochs in training")
 	parser.add_argument("--structure", type=str, default="resnet18", help='resnet models')
-	parser.add_argument("--ckpt", type=str, default="resnet18", help='pytorch lightning checkp')
+	parser.add_argument("--ckpt", type=str, default="", help='pytorch lightning checkp')
 	parser.add_argument("--source", type=str, default="faces_webface_112x112", help='path of files to process')
 	parser.add_argument("--num_persons", type=int, default=13938, help="number of persons in training set")
 	parser.add_argument("--embedding_dim", type=int, default=512, help="embedding dimension")
