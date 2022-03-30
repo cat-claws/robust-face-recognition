@@ -142,7 +142,7 @@ def main():
 			  resume_from_checkpoint = opt.ckpt if len(opt.ckpt) > 5 else None
 			 )
 	trainer.fit(model, train_set, valid_set)
-	trainer.test(model, valid_set, ckpt_path = 'best')
+	trainer.test(model, valid_set)#, ckpt_path = 'best')
 
 	torch.save(model.state_dict(), os.path.join(source, 'arcface_fork.pt'))
 
