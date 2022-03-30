@@ -53,15 +53,16 @@ class ArcFace(LightningModule):
 		for param in self.face_parser.parameters():
 			param.requires_grad = False
 
-
-	def forward(self, images, labels):
+	def extract_feature(self, images):
 		with torch.no_grad():
 			masks = self.face_parse(images)
-			images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[:-1]
-		# features = self.backbone(images)
+		images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[:-1]
 		features = torch.cat([b(img) for b, img in zip(self.backbones, images)], dim = 1)
-		return self.header(features, labels)
-	
+		return features
+
+	def forward(self, images, labels):
+		features = self.extract_feature(images)
+		return self.header(features, labels)	
 
 	def face_parse(self, x):
 		x_ = T.Resize((512, 512))(x)
@@ -90,11 +91,7 @@ class ArcFace(LightningModule):
 
 	def _shared_eval(self, batch, batch_idx, prefix):
 		with torch.no_grad():
-			images = torch.cat([batch['A'], batch['B']], dim = 0)
-			masks = self.face_parse(images)
-			images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[:-1]
-# 			feat = self.backbone(images)
-			feat = torch.cat([b(img) for b, img in zip(self.backbones, images)], dim = 1)
+			feat = self.extract_feature(torch.cat([batch['A'], batch['B']], dim = 0))
 			feat = feat.cpu().numpy()
 
 			FA = normalize(feat[:len(feat) //2])
@@ -154,10 +151,7 @@ def main():
 		ids = batch['id'].cpu().numpy()
 		same = batch['same'].cpu().numpy()
 		with torch.no_grad():
-			images = torch.cat([batch['A'], batch['B']], dim = 0).to(device)
-			masks = model.face_parse(images)
-			images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[:-1]
-			feat = torch.cat([b(img) for b, img in zip(self.backbones, images)], dim = 1)
+			feat = model.extract_feature(torch.cat([batch['A'], batch['B']], dim = 0).to(device))
 			feat = feat.cpu().numpy()
 			features_.append((ids, feat[:len(feat) //2], feat[len(feat) //2:], same))
 
