@@ -81,6 +81,7 @@ class ArcFace(LightningModule):
 	def training_step(self, batch, batch_idx):
 		logits = self(batch['images'], batch['person_ids'])
 		loss = F.cross_entropy(logits, batch['person_ids'])
+		self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 		return loss
 
 	def validation_step(self, batch, batch_idx):
@@ -136,9 +137,8 @@ def main():
 			  max_epochs=opt.max_epochs,
 			  gradient_clip_val=5,
 			  callbacks=[ModelCheckpoint(monitor="val_acc")],
-			  resume_from_checkpoint = opt.ckpt if len(opt.ckpt) > 5 else None
 			 )
-	trainer.fit(model, train_set, valid_set)
+	trainer.fit(model, train_set, valid_set)#, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None
 	trainer.test(model, valid_set)#, ckpt_path = 'best')
 
 	torch.save(model.state_dict(), os.path.join(source, 'arcface_fork.pt'))
