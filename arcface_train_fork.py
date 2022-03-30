@@ -36,6 +36,7 @@ import argparse
 
 def ptcv_get_pretrained_model(struct, num_classes):
 	m = ptcv_get_model(struct, pretrained=True)
+	m.features.final_pool = nn.AdaptiveAvgPool2d((1, 1))
 	m.output = nn.Linear(in_features=m.output.in_features, out_features=num_classes, bias=True)
 	return m
 
