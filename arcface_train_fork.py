@@ -43,7 +43,7 @@ class ArcFace(LightningModule):
 	def __init__(self, out_features = 13938, embeddings = [128, 128, 128, 128], structures = ['resnet10', 'resnet10', 'resnet10', 'resnet10']):
 		super(ArcFace, self).__init__()
 
-		self.backbones = [ptcv_get_pretrained_model(struct, num_classes = emb) for emb, struct in zip(embeddings, structures)]
+		self.backbones = nn.ModuleList([ptcv_get_pretrained_model(struct, num_classes = emb) for emb, struct in zip(embeddings, structures)])
 
 		self.header = ArcMarginProduct(in_features = sum(embeddings), out_features = out_features, s=30, m=0.5)
 
