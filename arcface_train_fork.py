@@ -154,7 +154,10 @@ def main():
 		ids = batch['id'].cpu().numpy()
 		same = batch['same'].cpu().numpy()
 		with torch.no_grad():
-			feat = model.backbone(torch.cat([batch['A'], batch['B']], dim = 0).to(device))
+			images = torch.cat([batch['A'], batch['B']], dim = 0).to(device)
+			masks = model.face_parse(images)
+			images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[:-1]
+			feat = torch.cat([b(img) for b, img in zip(self.backbones, images)], dim = 1)
 			feat = feat.cpu().numpy()
 			features_.append((ids, feat[:len(feat) //2], feat[len(feat) //2:], same))
 
