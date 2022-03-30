@@ -91,8 +91,9 @@ class ArcFace(LightningModule):
 		with torch.no_grad():
 			images = torch.cat([batch['A'], batch['B']], dim = 0)
 			masks = self.face_parse(images)
-			images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[-1]
-			feat = self.backbone(images)
+			images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[:-1]
+# 			feat = self.backbone(images)
+			features = torch.cat([b(img) for b, img in zip(self.backbones, images)], dim = 1)
 			feat = feat.cpu().numpy()
 
 			FA = normalize(feat[:len(feat) //2])
