@@ -56,7 +56,8 @@ class ArcFace(LightningModule):
 	def extract_feature(self, images):
 		with torch.no_grad():
 			masks = self.face_parse(images)
-		images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[:-1]
+		images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)
+		images = images[:len(self.backbones)]
 		features = torch.cat([b(img) for b, img in zip(self.backbones, images)], dim = 1)
 		return features
 
