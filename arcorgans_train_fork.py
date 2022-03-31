@@ -109,7 +109,8 @@ class ArcFace(LightningModule):
 
 	def configure_optimizers(self):
 		# return  torch.optim.SGD(self.parameters(), lr = 5e-2, momentum = 0.9, weight_decay = 1e-4)
-		return torch.optim.SGD(self.parameters(), lr=1e-1, momentum=0.9, weight_decay=5e-4)
+		# return torch.optim.SGD(self.parameters(), lr=1e-1, momentum=0.9, weight_decay=5e-4)
+		return torch.optim.SGD([{"params": self.backbones.parameters()}, {"params": self.header.parameters(), "lr": 1e-2}], lr=1e-1, momentum=0.9, weight_decay=5e-4)
 		# return torch.optim.Adam(self.parameters(), lr=1e-4)
 
 def main():
@@ -138,10 +139,10 @@ def main():
 			  gradient_clip_val=5,
 			  callbacks=[ModelCheckpoint(monitor="val_acc")],
 			 )
-	trainer.fit(model, train_set, valid_set)#, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None
-	trainer.test(model, valid_set)#, ckpt_path = 'best')
+	trainer.fit(model, train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
+	trainer.test(model, valid_set, ckpt_path = 'best')
 
-	torch.save(model.state_dict(), os.path.join(source, 'arcface_fork.pt'))
+	torch.save(model.state_dict(), os.path.join(source, 'arcorgans_fork.pt'))
 
 
 	model = model.to(device)
