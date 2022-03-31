@@ -138,10 +138,10 @@ def main():
 			  gradient_clip_val=5,
 			  callbacks=[ModelCheckpoint(monitor="val_acc")],
 			 )
-	trainer.fit(model, train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None
-	trainer.test(model, valid_set)#, ckpt_path = 'best')
+	trainer.fit(model, train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
+	trainer.test(model, valid_set, ckpt_path = 'best')
 
-	torch.save(model.state_dict(), os.path.join(source, 'arcface_fork.pt'))
+	torch.save(model.state_dict(), os.path.join(source, 'arcorgans.pt'))
 
 
 	model = model.to(device)
