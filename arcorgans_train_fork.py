@@ -35,9 +35,10 @@ from pytorchcv.model_provider import get_model as ptcv_get_model
 import argparse
 
 def ptcv_get_pretrained_model(struct, num_classes):
-	m = ptcv_get_model(struct, pretrained=True)
-	m.features.final_pool = nn.AdaptiveAvgPool2d((1, 1))
-	m.output = nn.Linear(in_features=m.output.in_features, out_features=num_classes, bias=True)
+	# m = ptcv_get_model(struct, pretrained=True)
+	m = torch.hub.load('pytorch/vision:v0.10.0', struct, pretrained=True)
+	# m.features.final_pool = nn.AdaptiveAvgPool2d((1, 1))
+	m.fc = nn.Linear(in_features=m.fc.in_features, out_features=num_classes, bias=True)
 	return m
 
 class ArcFace(LightningModule):

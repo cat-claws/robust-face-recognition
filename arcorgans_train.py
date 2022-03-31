@@ -27,7 +27,7 @@ sys.path.pop()
 sys.path.append('insightface/recognition/arcface_torch')
 sys.path.append('arcface-pytorch/models')
 
-from backbones import get_model
+from backbones import get_model as insf_get_model
 from metrics import ArcMarginProduct
 
 from pytorchcv.model_provider import get_model as ptcv_get_model
@@ -35,16 +35,17 @@ from pytorchcv.model_provider import get_model as ptcv_get_model
 import argparse
 
 def ptcv_get_pretrained_model(struct, num_classes):
-	m = ptcv_get_model(struct, pretrained=True)
-	m.features.final_pool = nn.AdaptiveAvgPool2d((1, 1))
-	m.output = nn.Linear(in_features=m.output.in_features, out_features=num_classes, bias=True)
+	# m = ptcv_get_model(struct, pretrained=True)
+	# m.features.final_pool = nn.AdaptiveAvgPool2d((1, 1))
+	m = torch.hub.load('pytorch/vision:v0.10.0', struct, pretrained=True)
+	m.fc = nn.Linear(in_features=m.fc.in_features, out_features=num_classes, bias=True)
 	return m
 
 class ArcFace(LightningModule):
 	def __init__(self, out_features = 13938, embeddings = 512, structures = 'r18'):
 		super(ArcFace, self).__init__()
 
-		self.backbone = get_model('r18')
+		self.backbone = insf_get_model('r18')
 
 		self.header = ArcMarginProduct(in_features = embeddings, out_features = out_features, s=30, m=0.5)
 
