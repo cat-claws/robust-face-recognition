@@ -41,12 +41,12 @@ def ptcv_get_pretrained_model(struct, num_classes):
 	return m
 
 class ArcFace(LightningModule):
-	def __init__(self, out_features = 13938, embeddings = [128, 128, 128, 128], structures = ['resnet10', 'resnet10', 'resnet10', 'resnet10']):
+	def __init__(self, out_features = 13938, embeddings = 512, structures = 'r18'):
 		super(ArcFace, self).__init__()
 
-		self.backbones = nn.ModuleList([ptcv_get_pretrained_model(struct, num_classes = emb) for emb, struct in zip(embeddings, structures)])
+		self.backbone = get_model('r18')
 
-		self.header = ArcMarginProduct(in_features = sum(embeddings), out_features = out_features, s=30, m=0.5)
+		self.header = ArcMarginProduct(in_features = embeddings, out_features = out_features, s=30, m=0.5)
 
 		self.face_parser = face_parser.eval()
 		self.face_parser.load_state_dict(torch.load('79999_iter.pth', map_location = 'cpu'))
@@ -56,8 +56,8 @@ class ArcFace(LightningModule):
 	def extract_feature(self, images):
 		with torch.no_grad():
 			masks = self.face_parse(images)
-		images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[:-1]
-		features = torch.cat([b(img) for b, img in zip(self.backbones, images)], dim = 1)
+		images = torch.matmul(images.permute(0, 2, 3, 1).unsqueeze(-1), masks.permute(0, 2, 3, 1).unsqueeze(-2).float()).permute(4, 0, 3, 1, 2)[-1]
+		features = self.backbone(images)
 		return features
 
 	def forward(self, images, labels):
@@ -138,7 +138,7 @@ def main():
 			  gradient_clip_val=5,
 			  callbacks=[ModelCheckpoint(monitor="val_acc")],
 			 )
-	trainer.fit(model, train_set, valid_set)#, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None
+	trainer.fit(model, train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None
 	trainer.test(model, valid_set)#, ckpt_path = 'best')
 
 	torch.save(model.state_dict(), os.path.join(source, 'arcface_fork.pt'))
