@@ -24,6 +24,16 @@ from model import BiSeNet
 face_parser = BiSeNet(n_classes=19)
 sys.path.pop()
 
+sys.path.append('multiple-attention')
+from models.MAT import MAT
+sys.path.pop()
+
+def mat_get_model(struct = 'efficientnet-b0'):
+	m = MAT(struct)
+	m.ensemble_classifier_fc[2] = nn.Linear(in_features=256, out_features=embeddings, bias=True)
+	return m
+
+
 sys.path.append('insightface/recognition/arcface_torch')
 sys.path.append('arcface-pytorch/models')
 
@@ -45,7 +55,8 @@ class ArcFace(LightningModule):
 	def __init__(self, out_features = 13938, embeddings = 512, structures = 'r18'):
 		super(ArcFace, self).__init__()
 
-		self.backbone = insf_get_model('r18')
+		# self.backbone = insf_get_model('r18')
+		self.backbone = mat_get_model() #ptcv_get_pretrained_model('resnet18', embeddings)
 
 		self.header = ArcMarginProduct(in_features = embeddings, out_features = out_features, s=30, m=0.5)
 
@@ -110,8 +121,8 @@ class ArcFace(LightningModule):
 
 	def configure_optimizers(self):
 		# return  torch.optim.SGD(self.parameters(), lr = 5e-2, momentum = 0.9, weight_decay = 1e-4)
-		return torch.optim.SGD(self.parameters(), lr=1e-1, momentum=0.9, weight_decay=5e-4)
-		# return torch.optim.Adam(self.parameters(), lr=1e-4)
+		# return torch.optim.SGD([{"params": self.backbone.parameters()}, {"params": self.header.parameters(), "lr": 1e-2}], lr=1e-1, momentum=0.9, weight_decay=5e-4)
+		return torch.optim.Adam(self.parameters(), lr=1e-4)
 
 def main():
 	
@@ -132,6 +143,8 @@ def main():
 
 	model = ArcFace(out_features = num_persons)#, embeddings = opt.embedding_dim, structure = opt.structure)
 	# model.load_state_dict(torch.load(os.path.join(source, 'arcface.pt')))
+	model.header.load_state_dict({k.replace('header.', ''):v for k, v in torch.load('faces_webface_112x112/arcface.pt', map_location = 'cpu').items() if k.replace('header.', '') in model.header.state_dict()})
+
 
 	trainer = Trainer(accelerator='gpu' if torch.cuda.is_available() else 'cpu',
 			  gpus=[opt.device_id],
@@ -140,7 +153,7 @@ def main():
 			  callbacks=[ModelCheckpoint(monitor="val_acc")],
 			 )
 	trainer.fit(model, train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
-	trainer.test(model, valid_set, ckpt_path = 'best')
+	trainer.test(model, valid_set)#, ckpt_path = '/home/ruihan/facereco/lightning_logs/version_13/checkpoints/epoch=3-step=40887.ckpt')
 
 	torch.save(model.state_dict(), os.path.join(source, 'arcorgans.pt'))
 
@@ -166,6 +179,7 @@ def main():
 	svc.fit(np.expand_dims(distances, 1), y)
 	y_pred = svc.predict(np.expand_dims(distances, 1))
 	print(confusion_matrix(y, y_pred))
+	print(accuracy_score(y, y_pred))
 
 
 if __name__ == "__main__":

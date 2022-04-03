@@ -168,6 +168,7 @@ def main():
 	svc.fit(np.expand_dims(distances, 1), y)
 	y_pred = svc.predict(np.expand_dims(distances, 1))
 	print(confusion_matrix(y, y_pred))
+	print(accuracy_score(y, y_pred))
 
 
 if __name__ == "__main__":
