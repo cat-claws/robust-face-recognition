@@ -35,14 +35,15 @@ from pytorchcv.model_provider import get_model as ptcv_get_model
 import argparse
 
 def ptcv_get_pretrained_model(struct, num_classes):
-	# m = ptcv_get_model(struct, pretrained=True)
-	m = torch.hub.load('pytorch/vision:v0.10.0', struct, pretrained=True)
-	# m.features.final_pool = nn.AdaptiveAvgPool2d((1, 1))
-	m.fc = nn.Linear(in_features=m.fc.in_features, out_features=num_classes, bias=True)
+	# m = torch.hub.load('pytorch/vision:v0.10.0', struct, pretrained=True)
+	# m.fc = nn.Linear(in_features=m.fc.in_features, out_features=num_classes, bias=True)
+	m = ptcv_get_model(struct, pretrained=True)
+	m.features.final_pool = nn.AdaptiveAvgPool2d((1, 1))
+	m.output = nn.Linear(in_features=m.output.in_features, out_features=num_classes, bias=True)
 	return m
 
 class ArcFace(LightningModule):
-	def __init__(self, out_features = 13938, embeddings = [128, 128, 128, 128], structures = ['resnet10', 'resnet10', 'resnet10', 'resnet10']):
+	def __init__(self, out_features = 13938, embeddings = [102, 102, 102, 102, 104], structures = ['resnet10', 'resnet10', 'resnet10', 'resnet10', 'resnet10']):
 		super(ArcFace, self).__init__()
 
 		self.backbones = nn.ModuleList([ptcv_get_pretrained_model(struct, num_classes = emb) for emb, struct in zip(embeddings, structures)])
@@ -112,8 +113,8 @@ class ArcFace(LightningModule):
 	def configure_optimizers(self):
 		# return  torch.optim.SGD(self.parameters(), lr = 5e-2, momentum = 0.9, weight_decay = 1e-4)
 		# return torch.optim.SGD(self.parameters(), lr=1e-1, momentum=0.9, weight_decay=5e-4)
-		return torch.optim.SGD([{"params": self.backbones.parameters()}, {"params": self.header.parameters(), "lr": 1e-2}], lr=1e-1, momentum=0.9, weight_decay=5e-4)
-		# return torch.optim.Adam(self.parameters(), lr=1e-4)
+		# return torch.optim.SGD([{"params": self.backbones.parameters()}, {"params": self.header.parameters(), "lr": 1e-2}], lr=1e-1, momentum=0.9, weight_decay=5e-4)
+		return torch.optim.Adam(self.parameters(), lr=1e-4)
 
 def main():
 	
@@ -134,6 +135,7 @@ def main():
 
 	model = ArcFace(out_features = num_persons)#, embeddings = opt.embedding_dim, structure = opt.structure)
 	# model.load_state_dict(torch.load(os.path.join(source, 'arcface.pt')))
+	model.header.load_state_dict({k.replace('header.', ''):v for k, v in torch.load('faces_webface_112x112/arcface.pt', map_location = 'cpu').items() if k.replace('header.', '') in model.header.state_dict()})
 
 	trainer = Trainer(accelerator='gpu' if torch.cuda.is_available() else 'cpu',
 			  gpus=[opt.device_id],

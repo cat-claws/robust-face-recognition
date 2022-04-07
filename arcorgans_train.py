@@ -28,9 +28,9 @@ sys.path.append('multiple-attention')
 from models.MAT import MAT
 sys.path.pop()
 
-def mat_get_model(struct = 'efficientnet-b0'):
+def mat_get_model(struct, num_classes):
 	m = MAT(struct)
-	m.ensemble_classifier_fc[2] = nn.Linear(in_features=256, out_features=embeddings, bias=True)
+	m.ensemble_classifier_fc[2] = nn.Linear(in_features=m.ensemble_classifier_fc[2].in_features, out_features=num_classes, bias=True)
 	return m
 
 
@@ -56,7 +56,7 @@ class ArcFace(LightningModule):
 		super(ArcFace, self).__init__()
 
 		# self.backbone = insf_get_model('r18')
-		self.backbone = mat_get_model() #ptcv_get_pretrained_model('resnet18', embeddings)
+		self.backbone = mat_get_model('efficientnet-b0', embeddings) #ptcv_get_pretrained_model('resnet18', embeddings)
 
 		self.header = ArcMarginProduct(in_features = embeddings, out_features = out_features, s=30, m=0.5)
 
