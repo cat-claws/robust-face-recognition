@@ -11,10 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 import sys
 import argparse
 
-sys.path.append('robust-face-recognition')
 import pl_models
-sys.path.pop()
-
 
 def main():	
 		
@@ -33,10 +30,10 @@ def main():
 		model = pl_models.ArcFace(out_features = opt.num_persons, embeddings = opt.embedding_dim, structure = opt.structure)
 	elif opt.select == 'arcorgans':
 		model = pl_models.ArcOrgans(out_features = opt.num_persons, embeddings = opt.embedding_dim, structure = opt.structure)
-	elif opt.select == 'argsegface':
+	elif opt.select == 'arcsegface':
 		embedding_dims = [int(x) for x in opt.embedding_dims.split(',')]
 		structures = opt.structures.split(',')
-		model = pl_models.ArcSegFace(out_features = opt.num_persons, embeddings = embedding_dims, structure = structures)
+		model = pl_models.ArcSegFace(out_features = opt.num_persons, embeddings = embedding_dims, structures = structures)
 
 	# model.load_state_dict(torch.load(os.path.join(opt.source, 'arcface.pt')))
 	model.header.load_state_dict({k.replace('header.', ''):v for k, v in torch.load('faces_webface_112x112/arcface.pt', map_location = 'cpu').items() if k.replace('header.', '') in model.header.state_dict()})
@@ -87,7 +84,7 @@ if __name__ == "__main__":
 	parser.add_argument("--embedding_dim", type=int, default=512, help="embedding dimension")
 	parser.add_argument("--structure", type=str, default="resnet18", help='resnet models')
 	parser.add_argument('--embedding_dims', help='delimited list input for embeddings', type=str)
-	parser.add_argument('--structures', help='delimited list input for structures', type=str)
+	parser.add_argument('--structures', help='delimited list input for structures', type=str, default="resnet10,resnet10,resnet10,resnet10,resnet10")
 	parser.add_argument("--device_id", type=int, default=1, help="GPU id")
 
 	opt = parser.parse_args()
