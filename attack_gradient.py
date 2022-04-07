@@ -87,8 +87,7 @@ class GlassesAttacker(LightningModule):
 
     def forward(self, images, labels = None):#wear
         images.requires_grad = True
-        perturbated_images = images.masked_scatter(self.get_glasses_mask_for_image(images).to(self.v.device), self.v)
-        torch.clamp(self.v, min=-1, max=1)
+        perturbated_images = images.masked_scatter(self.get_glasses_mask_for_image(images).to(self.v.device), torch.tanh(self.v))
         return perturbated_images
 
     def training_step(self, batch, batch_idx):
@@ -137,7 +136,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_persons", type=int, default=13938, help="number of persons in training set")
     parser.add_argument("--embedding_dim", type=int, default=512, help="embedding dimension")
     parser.add_argument("--structure", type=str, default="resnet18", help='resnet models')
-    parser.add_argument('--embedding_dims', help='delimited list input for embeddings', type=str)
+    parser.add_argument('--embedding_dims', help='delimited list input for embeddings', type=str, default = "102,102,102,102,104")
     parser.add_argument('--structures', help='delimited list input for structures', type=str, default="resnet10,resnet10,resnet10,resnet10,resnet10")
     parser.add_argument("--device_id", type=int, default=1, help="GPU id")
 
