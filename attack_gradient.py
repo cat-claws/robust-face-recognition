@@ -91,30 +91,51 @@ class GlassesAttacker(LightningModule):
         return perturbated_images
 
     def training_step(self, batch, batch_idx):
-        perturbated_images = self(batch['A'])
-        images = batch['A']
+        perturbated_images = self(batch['images'])
+        images = batch['images']
         self.differentiable_function.eval()
         logits = self.differentiable_function(perturbated_images, images)
         loss = F.threshold(logits, self.threshold, 0.)
+        self.log("train_logits", logits, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
+
+    def validation_step(self, batch, batch_idx):
+        self._shared_eval(batch, batch_idx, "val")
+
+    def test_step(self, batch, batch_idx):
+        self._shared_eval(batch, batch_idx, "test")
+
+    def _shared_eval(self, batch, batch_idx, prefix):
+        with torch.no_grad():
+            perturbated_images = self(batch['A'])
+            images = batch['A']
+            self.differentiable_function.eval()
+            logits = self.differentiable_function(perturbated_images, images)
+            loss = F.threshold(logits, self.threshold, 0.)
+        self.log(f"{prefix}_logits", logits, on_epoch=True, prog_bar=True)
+        self.log(f"{prefix}_loss", loss, on_epoch=True, prog_bar=True)  
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=1e-4)
 
 def main(model):        
 
-    source = 'faces_webface_112x112'
+    from facedataset import MXFaceDatasetConventional, MXFaceDatasetFromBin
 
-    from facedataset import MXFaceDatasetTwin, MXFaceDatasetBalancedIntraInterClusters, collate_paired_data, MXFaceDatasetFromBin
+    train_set_ = MXFaceDatasetConventional(opt.source)
+    train_set = torch.utils.data.DataLoader(train_set_, batch_size = opt.batch_size, shuffle = True, num_workers = 2)
 
-    valid_set_ = MXFaceDatasetFromBin(source, 'lfw')
-    valid_set = torch.utils.data.DataLoader(valid_set_, batch_size = 1, shuffle = False, num_workers = 2)
+    valid_set_ = MXFaceDatasetFromBin(opt.source, 'lfw')
+    valid_set = torch.utils.data.DataLoader(valid_set_, batch_size = opt.batch_size, shuffle = False, num_workers = 2)
+
+    test_set_ = MXFaceDatasetFromBin(opt.source, 'lfw')
+    test_set = torch.utils.data.DataLoader(valid_set_, batch_size = opt.batch_size, shuffle = False, num_workers = 2)
 
     attacker = GlassesAttacker(differentiable_function = Untargeted(model), threshold = np.pi - 1.3)
 
     
-    logger = CSVLogger(name=f'attack_logs_{opt.select}')
+    logger = CSVLogger('attack_logs', name=opt.select)
     trainer = Trainer(accelerator='gpu' if torch.cuda.is_available() else 'cpu',
               gpus=[opt.device_id],
               max_epochs=opt.max_epochs,
@@ -122,7 +143,7 @@ def main(model):
               callbacks=[ModelCheckpoint(save_last=True)],
               logger=logger,
              )
-    trainer.fit(attacker, valid_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
+    trainer.fit(attacker, train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
     # trainer.test(attacker, valid_set)#, ckpt_path = '/home/ruihan/facereco/lightning_logs/version_13/checkpoints/epoch=3-step=40887.ckpt')
 
 
