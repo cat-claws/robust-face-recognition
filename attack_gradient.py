@@ -91,8 +91,8 @@ class GlassesAttacker(LightningModule):
         return perturbated_images
 
     def training_step(self, batch, batch_idx):
-        perturbated_images = self(batch['images'])
-        images = batch['images']
+        perturbated_images = self(batch['A'])
+        images = batch['A']
         self.differentiable_function.eval()
         logits = self.differentiable_function(perturbated_images, images)
         loss = F.threshold(logits, self.threshold, 0.)
@@ -123,14 +123,14 @@ def main(model):
 
     from facedataset import MXFaceDatasetConventional, MXFaceDatasetFromBin
 
-    train_set_ = MXFaceDatasetConventional(opt.source)
-    train_set = torch.utils.data.DataLoader(train_set_, batch_size = opt.batch_size, shuffle = True, num_workers = 2)
+    # train_set_ = MXFaceDatasetConventional(opt.source)
+    # train_set = torch.utils.data.DataLoader(train_set_, batch_size = opt.batch_size, shuffle = True, num_workers = 2)
 
     valid_set_ = MXFaceDatasetFromBin(opt.source, 'lfw')
     valid_set = torch.utils.data.DataLoader(valid_set_, batch_size = opt.batch_size, shuffle = False, num_workers = 2)
 
-    test_set_ = MXFaceDatasetFromBin(opt.source, 'lfw')
-    test_set = torch.utils.data.DataLoader(valid_set_, batch_size = opt.batch_size, shuffle = False, num_workers = 2)
+    # test_set_ = MXFaceDatasetFromBin(opt.source, 'lfw')
+    # test_set = torch.utils.data.DataLoader(valid_set_, batch_size = opt.batch_size, shuffle = False, num_workers = 2)
 
     attacker = GlassesAttacker(differentiable_function = Untargeted(model), threshold = np.pi - 1.3)
 
@@ -143,7 +143,7 @@ def main(model):
               callbacks=[ModelCheckpoint(save_last=True)],
               logger=logger,
              )
-    trainer.fit(attacker, train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
+    trainer.fit(attacker, valid_set)#train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
     # trainer.test(attacker, valid_set)#, ckpt_path = '/home/ruihan/facereco/lightning_logs/version_13/checkpoints/epoch=3-step=40887.ckpt')
 
 
