@@ -1,10 +1,10 @@
 from pytorch_lightning.core.lightning import LightningModule
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import CSVLogger
 import pl_models
 
 import sys
-# sys.path.append('Adversarial_Patch_Attack')
 sys.path.append('eameo-faceswap-generator')
 
 import faceBlendCommon as fbc
@@ -113,21 +113,24 @@ def main(model):
 
     attacker = GlassesAttacker(differentiable_function = Untargeted(model), threshold = np.pi - 1.3)
 
+    
+    logger = CSVLogger(name=f'attack_logs_{opt.select}')
     trainer = Trainer(accelerator='gpu' if torch.cuda.is_available() else 'cpu',
               gpus=[opt.device_id],
               max_epochs=opt.max_epochs,
               gradient_clip_val=5,
               callbacks=[ModelCheckpoint(save_last=True)],
+              logger=logger,
              )
     trainer.fit(attacker, valid_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
-    trainer.test(attacker, valid_set)#, ckpt_path = '/home/ruihan/facereco/lightning_logs/version_13/checkpoints/epoch=3-step=40887.ckpt')
+    # trainer.test(attacker, valid_set)#, ckpt_path = '/home/ruihan/facereco/lightning_logs/version_13/checkpoints/epoch=3-step=40887.ckpt')
 
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="face models")
     parser.add_argument("--select", type=str, default="arcface", help='which model to train')
-    parser.add_argument("--max_epochs", type=int, default=1000, help="max epochs in training")
+    parser.add_argument("--max_epochs", type=int, default=100, help="max epochs in training")
     parser.add_argument("--batch_size", type=int, default=1, help="batch size in training")
     parser.add_argument("--ckpt", type=str, default="", help='pytorch lightning checkpoint')
     parser.add_argument("--state_dict", type=str, default="arcface18.pth", help='pytorch load_state_dict checkpoint')
