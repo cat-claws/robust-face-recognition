@@ -37,7 +37,7 @@ sys.path.pop()
 from pytorchcv.model_provider import get_model as ptcv_get_model
 
 def kimera_get_model(structure, num_classes):
-	if structure in ('resnet34', 'resnet50', 'resnet101', 'resnet152'):
+	if structure in ('resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152'):
 
 		m = torch.hub.load('pytorch/vision:v0.10.0', structure, pretrained=True)
 

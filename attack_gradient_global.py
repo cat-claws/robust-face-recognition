@@ -132,7 +132,7 @@ def main(model):
     # test_set_ = MXFaceDatasetFromBin(opt.source, 'lfw')
     # test_set = torch.utils.data.DataLoader(valid_set_, batch_size = opt.batch_size, shuffle = False, num_workers = 2)
 
-    attacker = GlassesAttacker(differentiable_function = Untargeted(model), threshold = np.pi - 1.3)
+    attacker = GlassesAttacker(differentiable_function = Untargeted(model), threshold = np.pi - opt.threshold)
 
     sample_id = sample["id"]
     logger = CSVLogger('attack_logs', name=f"{opt.select}_{opt.structure}_{sample_id}")
@@ -150,6 +150,7 @@ def main(model):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="face models")
+    parser.add_argument("--threshold", type=float, default=1.3243, help="max epochs in training")
     parser.add_argument("--select", type=str, default="arcface", help='which model to train')
     parser.add_argument("--max_epochs", type=int, default=100, help="max epochs in training")
     parser.add_argument("--batch_size", type=int, default=1, help="batch size in training")

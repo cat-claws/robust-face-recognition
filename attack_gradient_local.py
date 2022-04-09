@@ -78,7 +78,7 @@ def patch_attack(model, image, glasses_parameters, glasses_mask, target, same, a
     
     angle_threshold = (np.pi - angle_threshold) if same else angle_threshold
 
-    while target_angle > (angle_threshold - 0) and count < max_iteration:
+    while target_angle > (angle_threshold - 0.05) and count < max_iteration:
         # Optimize the patch
         perturbated_image = (np.rint((perturbated_image / 2 + 0.5) *  255) / 255 - 0.5) * 2
         perturbated_image.requires_grad = True
@@ -134,11 +134,11 @@ def main(model, folder):
             batch_id =  batch['id'].item()
             same = batch['same'].item()
             
-            if not same:
-                continue
+            # if not same:
+            #     continue
 
-            if os.path.exists(f'{folder}/{batch_id}_perturbed.npy'):
-                continue
+            # if os.path.exists(f'{folder}/{batch_id}_perturbed.npy'):
+            #     continue
 
             with open(opt.select + '.txt', 'a') as f:
                 f.write('id' + str(batch_id) + '\n')
@@ -152,7 +152,7 @@ def main(model, folder):
 
             train_actual_total += 1
 
-            perturbated_image, glasses_parameters, target_angle = patch_attack(model, image, glasses_parameters, glasses_mask, target, same, 1.3, 1., 20000)
+            perturbated_image, glasses_parameters, target_angle = patch_attack(model, image, glasses_parameters, glasses_mask, target, same, opt.threshold, 1., 1000)
             print(f'original {angle.item():.3f}, optimized angle: {target_angle:.3f}')
 
             if not os.path.isdir(folder):
@@ -164,6 +164,7 @@ def main(model, folder):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="face models")
+    parser.add_argument("--threshold", type=float, default=1.3243, help="max epochs in training")
     parser.add_argument("--select", type=str, default="arcface", help='which model to train')
     parser.add_argument("--max_epochs", type=int, default=100, help="max epochs in training")
     parser.add_argument("--batch_size", type=int, default=1, help="batch size in training")
