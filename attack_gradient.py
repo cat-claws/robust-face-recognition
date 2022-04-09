@@ -134,16 +134,16 @@ def main(model):
 
     attacker = GlassesAttacker(differentiable_function = Untargeted(model), threshold = np.pi - 1.3)
 
-    
-    logger = CSVLogger('attack_logs', name=opt.select)
+    sample_id = sample["id"]
+    logger = CSVLogger('attack_logs', name=f"{opt.select}_{opt.structure}_{sample_id}")
     trainer = Trainer(accelerator='gpu' if torch.cuda.is_available() else 'cpu',
-              gpus=[opt.device_id],
-              max_epochs=opt.max_epochs,
-              gradient_clip_val=5,
-              callbacks=[ModelCheckpoint(save_last=True)],
-              logger=logger,
-             )
-    trainer.fit(attacker, valid_set)#train_set, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
+            gpus=[opt.device_id],
+            max_epochs=opt.max_epochs,
+            gradient_clip_val=5,
+            callbacks=[ModelCheckpoint(save_last=True)],
+            logger=logger,
+            )
+    trainer.fit(attacker, valid_set, ckpt_path=opt.ckpt if len(opt.ckpt) > 5 else None)
     # trainer.test(attacker, valid_set)#, ckpt_path = '/home/ruihan/facereco/lightning_logs/version_13/checkpoints/epoch=3-step=40887.ckpt')
 
 
