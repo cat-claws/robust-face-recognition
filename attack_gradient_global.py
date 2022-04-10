@@ -23,7 +23,7 @@ import argparse
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("eameo-faceswap-generator/shape_predictor_68_face_landmarks.dat")
-get_points = lambda x: np.array(fbc.getLandmarks(detector, predictor, ((x.numpy()/2+0.5) * 255).astype('uint8').transpose(1, 2, 0)))
+get_points = lambda x: np.array(fbc.getLandmarks(detector, predictor, ((x.detach().numpy()/2+0.5) * 255).astype('uint8').transpose(1, 2, 0)))
 
 FACIAL_LANDMARKS_IDXS = {
 	"mouth": (48, 68),
@@ -134,8 +134,7 @@ def main(model):
 
     attacker = GlassesAttacker(differentiable_function = Untargeted(model), threshold = np.pi - opt.threshold)
 
-    sample_id = sample["id"]
-    logger = CSVLogger('attack_logs', name=f"{opt.select}_{opt.structure}_{sample_id}")
+    logger = CSVLogger('attack_logs', name=opt.select)
     trainer = Trainer(accelerator='gpu' if torch.cuda.is_available() else 'cpu',
             gpus=[opt.device_id],
             max_epochs=opt.max_epochs,
