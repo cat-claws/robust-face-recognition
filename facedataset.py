@@ -96,8 +96,8 @@ class MXFaceDatasetConventional(MXFaceDataset):
 
 
 class MXFaceDatasetBalancedIntraInterClusters(MXFaceDataset):
-	def __init__(self, source, resize = None):
-		super(MXFaceDatasetBalancedIntraInterClusters, self).__init__(source, resize)
+	def __init__(self, source, resize = None, channel = 'rgb'):
+		super(MXFaceDatasetBalancedIntraInterClusters, self).__init__(source, resize, channel)
 		# random.shuffle(self.persons)
 		persons_list = list(self.persons.values())
 		self.upper = list(chain(*persons_list[::2]))
