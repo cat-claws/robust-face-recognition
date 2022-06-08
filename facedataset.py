@@ -1,4 +1,5 @@
 import os
+import cv2
 import torch
 import numpy as np
 import mxnet as mx
@@ -38,14 +39,28 @@ def get_person_id_category(record):
 transforms = torch.nn.Sequential(
     T.RandomHorizontalFlip(p=0.3),
     T.ConvertImageDtype(torch.float),
-    T.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    T.Normalize(0.5, 0.5)
 )
 
-def idx_to_data(record, idx, resize = None):
+def idx_to_data(record, idx, resize = None, channel = 'rgb'):
 	s = record.read_idx(idx)
-	header, img = mx.recordio.unpack_img(s, iscolor = 1)
-	sample = img.transpose(2, 0, 1)
-	sample = transforms(torch.from_numpy(sample).flip(0))    # flip to change BGR to RGB
+	if channel == 'rgb':
+		header, img = mx.recordio.unpack_img(s, iscolor = 1)
+		sample = np.flip(img, axis=2)    # flip to change BGR to RGB
+
+	elif channel == 'rgbd':
+		header, buf = mx.recordio.unpack(s)
+		img = cv2.imdecode(np.frombuffer(buf, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+		sample = np.concatenate((np.flip(img[:, :, :3], axis=2), img[:, :, 3:]), axis=2)
+
+	elif channel == 'rgbdea':
+		header, buf = mx.recordio.unpack(s)
+		_, buf1, buf2 = buf.split(b'\x89PNG')
+		rgb = cv2.imdecode(np.frombuffer(b'\x89PNG' + buf1, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+		dea = cv2.imdecode(np.frombuffer(b'\x89PNG' + buf2, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+		sample = np.concatenate((np.flip(rgb, axis=2), dea), axis=2)
+
+	sample = transforms(torch.from_numpy(sample.copy().transpose(2, 0, 1)))
 	if resize != None:
 		sample = T.Resize(resize)(sample)
 	return sample, torch.tensor(header.label, dtype=torch.long)
@@ -55,19 +70,19 @@ import random
 from itertools import chain
 
 class MXFaceDataset(torch.utils.data.Dataset):
-	def __init__(self, source, resize = None):
+	def __init__(self, source, resize = None, channel = 'rgb'):
 		super(MXFaceDataset, self).__init__()
 		self.record = mx.recordio.MXIndexedRecordIO(os.path.join(source, 'train.idx'),
 													os.path.join(source, 'train.rec'),
 													'r')
 
 		self.persons = get_person_id_category(self.record)
-		self.idx_to_data = lambda record, idx: idx_to_data(record, idx, resize)
+		self.idx_to_data = lambda record, idx: idx_to_data(record, idx, resize, channel)
 
 
 class MXFaceDatasetConventional(MXFaceDataset):
-	def __init__(self, source, resize = None):
-		super(MXFaceDatasetConventional, self).__init__(source, resize)
+	def __init__(self, source, resize = None, channel = 'rgb'):
+		super(MXFaceDatasetConventional, self).__init__(source, resize, channel)
 		self.sample_idx = list(chain(*self.persons.values()))
 
 	def __len__(self):
